@@ -1,0 +1,18 @@
+# Core dependencies
+chromadb>=0.4.22
+feedparser>=6.0.11
+playwright>=1.41.0
+requests>=2.31.0
+pyyaml>=6.0.1
+apscheduler>=3.10.4
+pydantic>=2.5.0
+beautifulsoup4>=4.12.3
+ollama>=0.1.7
+readability-lxml>=0.8.1
+lxml>=4.9.4
+python-dateutil>=2.8.2
+
+# Optional/Development
+pytest>=7.4.4
+pytest-asyncio>=0.23.3
+python-dotenv>=1.0.0

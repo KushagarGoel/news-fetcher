@@ -1,0 +1,190 @@
+{
+  "project": "news-aggregator",
+  "description": "News aggregation system for Indian fintech with category-wise ChromaDB collections and email notifications",
+  "version": "1.0.0",
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "Project Setup and Configuration System",
+      "description": "Create directory structure, requirements.txt, and YAML configuration files for sources, competitors, clients, keywords, and email routing",
+      "acceptanceCriteria": [
+        "Directory structure created as per plan (config/, src/, data/, scripts/)",
+        "requirements.txt includes: chromadb, feedparser, playwright, requests, pyyaml, apscheduler, pydantic, beautifulsoup4, ollama",
+        "config/sources.yaml has RSS feeds for tech, industry, competitor, clients categories",
+        "config/competitors.yaml lists at least 5 competitors with keywords",
+        "config/clients.yaml has lenders and merchants sections with keywords",
+        "config/keywords.yaml has industry and tech keywords",
+        "config/email.yaml has SMTP settings and routing rules"
+      ],
+      "priority": "high",
+      "passes": true
+    },
+    {
+      "id": "US-002",
+      "title": "Pydantic Data Models",
+      "description": "Create Pydantic models for Article, Source, Competitor, Client, EmailConfig with validation",
+      "acceptanceCriteria": [
+        "Article model has all fields: id, title, url, source, published_at, fetched_at, content, content_hash, embedding, category, matched_keywords, competitor_mentions, client_mentions, tags, email_routing",
+        "Category enum with values: tech, industry, competitor, clients",
+        "ClientType enum with values: lender, merchant",
+        "Source, Competitor, ClientConfig, EmailConfig models defined",
+        "All models have proper type hints and validation"
+      ],
+      "priority": "high",
+      "passes": true
+    },
+    {
+      "id": "US-003",
+      "title": "Ollama Embedding Integration",
+      "description": "Create embedder module that interfaces with Ollama local API for generating text embeddings",
+      "acceptanceCriteria": [
+        "OllamaEmbedder class created in src/processors/embedder.py",
+        "embed() method returns list[float] for single text",
+        "embed_batch() method handles multiple texts efficiently",
+        "Configurable model (default: nomic-embed-text) and base_url",
+        "Handles Ollama connection errors gracefully",
+        "Returns embeddings with correct dimensions (768 for nomic-embed-text)"
+      ],
+      "priority": "high",
+      "passes": true
+    },
+    {
+      "id": "US-004",
+      "title": "Category-Wise ChromaDB Storage",
+      "description": "Create 4 separate ChromaDB collections (tech, industry, competitor, clients) with vector storage",
+      "acceptanceCriteria": [
+        "VectorStore class created in src/storage/vector_store.py",
+        "4 collections created: tech_articles, industry_articles, competitor_articles, clients_articles",
+        "add_article() stores article with embedding in correct collection",
+        "article_exists() checks URL in specific collection",
+        "semantic_duplicate() checks similarity within collection using embedding",
+        "get_collection() returns correct collection by category",
+        "Persistent storage in data/chroma_db/"
+      ],
+      "priority": "high",
+      "passes": true
+    },
+    {
+      "id": "US-005",
+      "title": "Category Classifier and Entity Detection",
+      "description": "Classify articles into categories and detect competitor/client mentions with auto-tagging",
+      "acceptanceCriteria": [
+        "Classifier class assigns category based on keyword priority: competitor > client > industry > tech",
+        "detect_competitors() returns list of matched competitor names",
+        "detect_clients() returns list of dicts with name and type (lender/merchant)",
+        "Tagger class auto-generates tags from content (funding, acquisition, RBI_regulation, etc.)",
+        "EmailRouter computes routing decision with recipients, priority based on entities and tags"
+      ],
+      "priority": "high",
+      "passes": true
+    },
+    {
+      "id": "US-006",
+      "title": "RSS Fetchers",
+      "description": "Implement RSS fetchers for Google News, Hacker News, and Medium feeds",
+      "acceptanceCriteria": [
+        "BaseFetcher abstract class with fetch() method",
+        "RSSFetcher implements Google News RSS parsing",
+        "HNFetcher implements Hacker News API fetching",
+        "MediumFetcher handles Medium RSS feeds",
+        "All fetchers return standardized Article objects",
+        "Handles network errors gracefully",
+        "Respects rate limits between requests"
+      ],
+      "priority": "high",
+      "passes": true
+    },
+    {
+      "id": "US-007",
+      "title": "Web Scraper with Playwright",
+      "description": "Implement headless browser scraper for dynamic content extraction",
+      "acceptanceCriteria": [
+        "WebScraper class using Playwright",
+        "scrape_url() extracts article title, content, published date",
+        "Uses readability-lxml or similar for content extraction",
+        "Configurable CSS selectors for different sites",
+        "Handles JavaScript-rendered content",
+        "Respects robots.txt and rate limits"
+      ],
+      "priority": "medium",
+      "passes": true
+    },
+    {
+      "id": "US-008",
+      "title": "Email Notification System",
+      "description": "Send email notifications per category with HTML templates and routing logic",
+      "acceptanceCriteria": [
+        "EmailNotifier class with SMTP client wrapper",
+        "send_article_alert() sends immediate alerts for high priority",
+        "send_digest() batches multiple articles",
+        "HTML email template with article cards showing title, snippet, URL, tags, entities",
+        "Subject line includes category and entity names",
+        "Routes to correct recipients based on entity-specific rules, then tag rules, then category defaults",
+        "Deduplicates recipients across multiple matching rules"
+      ],
+      "priority": "high",
+      "passes": true
+    },
+    {
+      "id": "US-009",
+      "title": "Hybrid Search Per Category",
+      "description": "Implement semantic + keyword search within each ChromaDB collection",
+      "acceptanceCriteria": [
+        "HybridSearch class in src/search/hybrid_search.py",
+        "search() method takes category, query, and optional keyword filters",
+        "Semantic search using Ollama embeddings",
+        "Keyword filtering on title, content, tags, entities",
+        "Configurable number of results (default: 10)",
+        "Filter by client_type for clients category",
+        "Filter by specific competitor or client name"
+      ],
+      "priority": "medium",
+      "passes": true
+    },
+    {
+      "id": "US-010",
+      "title": "CLI Interface",
+      "description": "Create CLI for manual fetch, search, and email testing",
+      "acceptanceCriteria": [
+        "python -m src.main fetch --all fetches all categories",
+        "python -m src.main fetch --category <cat> fetches specific category",
+        "python -m src.main fetch --category clients --client-type lender works",
+        "python -m src.main search --category <cat> <query> searches within category",
+        "python -m src.main test-email sends test email",
+        "All commands have --help with usage info"
+      ],
+      "priority": "medium",
+      "passes": true
+    },
+    {
+      "id": "US-011",
+      "title": "Cron Scheduling",
+      "description": "Implement scheduled job runner that fetches news every 3 hours and sends notifications",
+      "acceptanceCriteria": [
+        "cron.py uses APScheduler to run every 3 hours",
+        "Fetches all categories in sequence",
+        "Sends email notifications for new articles",
+        "Logs summary of fetched articles and sent emails",
+        "Handles errors gracefully, continues with next category on failure",
+        "Can run manually: python cron.py"
+      ],
+      "priority": "medium",
+      "passes": true
+    },
+    {
+      "id": "US-012",
+      "title": "End-to-End Integration",
+      "description": "Full integration test - fetch, classify, store, and notify",
+      "acceptanceCriteria": [
+        "Running python -m src.main fetch --all successfully fetches and stores articles",
+        "Articles are classified into correct collections",
+        "Duplicate articles are not re-stored",
+        "Email notifications are sent for new articles",
+        "Search returns relevant results",
+        "All tests pass: pytest tests/"
+      ],
+      "priority": "high",
+      "passes": true
+    }
+  ]
+}

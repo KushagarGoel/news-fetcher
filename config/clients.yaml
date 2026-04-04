@@ -1,0 +1,32 @@
+# Lenders: Banks, NBFCs, and lending platforms
+lenders:
+  - name: "HDB"
+    keywords: ["HDB"]
+  - name: "DMI"
+    keywords: ["DMI Finance", "DMI"]
+  - name: "fibe"
+    keywords: ["Early Salary", "Fibe"]
+  - name: "TVS Credit"
+    keywords: ["TVS Credit", "TVS Credit Services"]
+  - name: "Chola"
+    keywords: ["Chola", "Cholamandalam", "Chola Finance"]
+  - name: "PayU"
+    keywords: ["PayU", "PayU Finance"]
+  - name: "ZestMoney"
+    keywords: ["ZestMoney", "Zest Money"] 
+
+
+# Merchants: E-commerce, retail partners, platforms
+merchants:
+  - name: "Flipkart"
+    keywords: ["Flipkart", "Flipkart Pay Later", "super money"]
+  - name: "Amity"
+    keywords: ["Amity University", "Amity Online"]
+  - name: "U-Next"
+    keywords: ["U-Next", "UNext", "U Next Learning"]
+  - name: "Manipal"
+    keywords: ["Manipal", "Manipal University", "MAHE"]
+  - name: "Swiggy"
+    keywords: ["Swiggy", "Swiggy Money"]
+  - name: "LPU"
+    keywords: ["LPU", "Lovely Professional University"]

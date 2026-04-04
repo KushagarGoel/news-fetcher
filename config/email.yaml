@@ -1,0 +1,130 @@
+# SMTP Configuration
+smtp:
+  host: "smtp.gmail.com"
+  port: 587
+  username: "${SMTP_USERNAME}"
+  password: "${SMTP_PASSWORD}"
+  use_tls: true
+
+# Multi-dimensional email routing configuration
+# Articles are matched against rules in priority order:
+# 1. Entity-specific (competitor/client) -> highest priority
+# 2. Tag-based rules
+# 3. Category default -> fallback
+
+routing:
+  # CATEGORY-LEVEL DEFAULTS (fallback if no specific match)
+  category_defaults:
+    tech:
+      recipients: ["kushagargoel28@gmail.com"]
+      digest_mode: true
+    industry:
+      recipients: ["kushagargoel28@gmail.com"]
+      digest_mode: true
+    competitor:
+      recipients: ["kushagargoel28@gmail.com"]
+      digest_mode: false  # Instant alerts for competitors
+    clients:
+      recipients: ["kushagargoel28@gmail.com"]
+      digest_mode: false  # Instant alerts for clients
+
+  # ENTITY-SPECIFIC ROUTING (per competitor/client)
+  # These override category defaults when matched
+  entities:
+    # Per-competitor routing
+    competitors:
+      "Paytm":
+        recipients: ["kushagargoel28@gmail.com"]
+        digest_mode: false
+      "PhonePe":
+        recipients: ["kushagargoel28@gmail.com"]
+        digest_mode: false
+      "CRED":
+        recipients: ["kushagargoel28@gmail.com"]
+        digest_mode: false
+      "Razorpay":
+        recipients: ["kushagargoel28@gmail.com"]
+        digest_mode: false
+
+    # Per-client routing with client type
+    clients:
+      # Lenders
+      "HDFC Bank":
+        recipients: ["kushagargoel28@gmail.com"]
+        client_type: "lender"
+        digest_mode: false
+      "ICICI Bank":
+        recipients: ["kushagargoel28@gmail.com"]
+        client_type: "lender"
+        digest_mode: false
+      "Bajaj Finance":
+        recipients: ["kushagargoel28@gmail.com"]
+        client_type: "lender"
+        digest_mode: true
+
+      # Merchants
+      "Amazon India":
+        recipients: ["kushagargoel28@gmail.com"]
+        client_type: "merchant"
+        digest_mode: false
+      "Flipkart":
+        recipients: ["kushagargoel28@gmail.com"]
+        client_type: "merchant"
+        digest_mode: false
+
+  # TAG-BASED ROUTING (matches auto-generated tags)
+  # Applied in addition to entity/category routing
+  tags:
+    "funding":
+      recipients: ["kushagargoel28@gmail.com"]
+      priority: "high"
+    "acquisition":
+      recipients: ["kushagargoel28@gmail.com"]
+      priority: "critical"
+    "merger":
+      recipients: ["kushagargoel28@gmail.com"]
+      priority: "critical"
+    "product_launch":
+      recipients: ["kushagargoel28@gmail.com"]
+      priority: "high"
+    "partnership":
+      recipients: ["kushagargoel28@gmail.com"]
+      priority: "medium"
+    "RBI_regulation":
+      recipients: ["kushagargoel28@gmail.com"]
+      priority: "critical"
+    "compliance":
+      recipients: ["kushagargoel28@gmail.com"]
+      priority: "high"
+    "data_breach":
+      recipients: ["kushagargoel28@gmail.com"]
+      priority: "critical"
+    "security_incident":
+      recipients: ["kushagargoel28@gmail.com"]
+      priority: "critical"
+    "layoffs":
+      recipients: ["kushagargoel28@gmail.com"]
+      priority: "medium"
+    "IPO":
+      recipients: ["kushagargoel28@gmail.com"]
+      priority: "high"
+    "earnings":
+      recipients: ["kushagargoel28@gmail.com"]
+      priority: "medium"
+    "quarterly_results":
+      recipients: ["kushagargoel28@gmail.com"]
+      priority: "medium"
+    "expansion":
+      recipients: ["kushagargoel28@gmail.com"]
+      priority: "medium"
+    "new_market":
+      recipients: ["kushagargoel28@gmail.com"]
+      priority: "medium"
+
+# Global email settings
+settings:
+  default_digest_mode: true
+  max_articles_per_email: 10
+  deduplicate_recipients: true
+  include_tags_in_subject: true
+  include_entities_in_subject: true

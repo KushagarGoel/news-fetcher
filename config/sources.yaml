@@ -1,0 +1,59 @@
+# News sources organized by category
+#
+# Google News feeds have queries pulled from:
+#   - keywords.yaml (tech/industry)
+#   - competitors.yaml (competitor names)
+#   - clients.yaml (client names)
+#
+# Base URL format: https://news.google.com/rss/search?q={QUERY}&hl=en-IN&gl=IN&ceid=IN:en
+
+tech:
+  rss_feeds:
+    - name: "hacker_news"
+      url: "https://news.ycombinator.com/rss"
+    # Google News - queries from keywords.yaml (tech section):
+    # - fintech
+    # - API banking
+    # - open banking
+    # - payment gateway
+    # - etc.
+  scrape_targets: []
+
+industry:
+  rss_feeds:
+    # Google News - queries from keywords.yaml (industry section):
+    # - digital lending
+    # - BNPL
+    # - RBI regulation
+    # - NBFC
+    # - etc.
+  scrape_targets: []
+
+competitor:
+  rss_feeds:
+    # Google News - queries from competitors.yaml (names):
+    # - Paytm
+    # - PhonePe
+    # - CRED
+    # - Razorpay
+    # - etc.
+  scrape_targets:
+    - name: "paytm_blog"
+      url: "https://blog.paytm.com"
+      selector: "article"
+    - name: "phonepe_blog"
+      url: "https://www.phonepe.com/blog/"
+      selector: ".blog-post"
+
+clients:
+  rss_feeds:
+    # Google News - queries from clients.yaml (names):
+    # - HDFC Bank
+    # - ICICI Bank
+    # - Amazon India
+    # - Flipkart
+    # - etc.
+  scrape_targets:
+    - name: "hdfc_news"
+      url: "https://www.hdfcbank.com/about-us/news-room"
+      selector: ".news-item"

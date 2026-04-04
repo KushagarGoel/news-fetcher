@@ -1,0 +1,16 @@
+competitors:
+  - name: "Razorpay"
+    domains: ["razorpay.com"]
+    keywords: ["Razorpay", "Razorpay lending"]
+
+  - name: "PayU"
+    domains: ["payu.in", "payu.com"]
+    keywords: ["PayU", "PayU Finance", "PayU lending"]
+
+  - name: "Pinelabs"
+    domains: ["pinelabs.com"]
+    keywords: ["Pinelabs", "Pine Labs", "Pine Labs lending"]
+
+  - name: "Early Salary"
+    domains: ["earlysalary.com", "fibe.in"]
+    keywords: ["Early Salary", "Fibe", "EarlySalary"]
