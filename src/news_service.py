@@ -6,18 +6,27 @@ from typing import Any
 
 import yaml
 
+from src.fetchers.bloomberg_fetcher import BloombergFetcher
+from src.fetchers.bs_fetcher import BusinessStandardFetcher
+from src.fetchers.et_fetcher import EconomicTimesFetcher
 from src.fetchers.hn_fetcher import HNFetcher
+from src.fetchers.inc42_fetcher import Inc42Fetcher
+from src.fetchers.ken_fetcher import TheKenFetcher
 from src.fetchers.medium_fetcher import MediumTagFetcher
+from src.fetchers.rbi_fetcher import RBIFetcher
 from src.fetchers.rss_fetcher import RSSFetcher, GoogleNewsFetcher
+from src.fetchers.tracxn_fetcher import TracxnFetcher
 from src.models import Article, Category, ClientType, FetchResult
 from src.notifications.email_notifier import EmailNotifier
 from src.processors.classifier import Classifier
 from src.processors.duplicate_grouper import DuplicateGrouper
 from src.processors.email_router import EmailRouter
 from src.processors.embedder import OllamaEmbedder
+from src.processors.region_filter import RegionFilter
 from src.processors.relevance_checker import RelevanceChecker
 from src.processors.summarizer import Summarizer
 from src.processors.tagger import Tagger
+from src.processors.time_filter import TimeFilter
 from src.processors.url_checker import URLChecker
 from src.search.hybrid_search import HybridSearch
 from src.storage.vector_store import VectorStore
@@ -69,6 +78,9 @@ class NewsService:
         # Load source configurations
         self.sources_config = self._load_sources_config()
 
+        # Aggregate all keywords for fetcher filtering
+        self.all_keywords = self._aggregate_keywords()
+
     def _load_sources_config(self) -> dict[str, Any]:
         """Load sources configuration from YAML."""
         try:
@@ -78,12 +90,66 @@ class NewsService:
             logger.error(f"Failed to load sources config: {e}")
             return {}
 
+    def _aggregate_keywords(self) -> list[str]:
+        """Aggregate all keywords from configs for fetcher filtering.
+
+        Returns:
+            Combined list of all keywords from competitors, clients, and keywords config
+        """
+        keywords: set[str] = set()
+
+        # Add competitor keywords
+        for competitor in self.classifier.competitors:
+            keywords.update(competitor.keywords)
+
+        # Add client keywords
+        for client in self.classifier.lenders + self.classifier.merchants:
+            keywords.update(client.keywords)
+
+        # Add industry and tech keywords
+        keywords.update(self.classifier.industry_keywords)
+        keywords.update(self.classifier.tech_keywords)
+
+        return list(keywords)
+
     def _create_fetchers(self, category: Category) -> list:
         """Create fetchers for a category."""
         fetchers = []
         cat_config = self.sources_config.get(category.value, {})
 
-        # Get RSS feeds from config
+        # Add new Indian business news sources for ALL categories
+        # These sources cover all topics, classification happens post-fetch
+        fetchers.extend([
+            Inc42Fetcher(category=category, keywords=self.all_keywords),
+            TheKenFetcher(category=category, keywords=self.all_keywords),
+            EconomicTimesFetcher(category=category, keywords=self.all_keywords),
+            BusinessStandardFetcher(category=category, keywords=self.all_keywords),
+        ])
+
+        # Category-specific additional sources
+        if category == Category.TECH:
+            fetchers.extend([
+                BloombergFetcher(),  # International, filtered by relevance
+            ])
+            keyword_fetchers = self._create_keyword_fetchers(Category.TECH)
+            fetchers.extend(keyword_fetchers)
+        elif category == Category.INDUSTRY:
+            fetchers.extend([
+                RBIFetcher(),  # Regulatory only for industry
+            ])
+            keyword_fetchers = self._create_keyword_fetchers(Category.INDUSTRY)
+            fetchers.extend(keyword_fetchers)
+        elif category == Category.COMPETITOR:
+            fetchers.extend([
+                TracxnFetcher(),  # Startup intelligence for competitors
+            ])
+            competitor_fetchers = self._create_competitor_fetchers()
+            fetchers.extend(competitor_fetchers)
+        elif category == Category.CLIENTS:
+            client_fetchers = self._create_client_fetchers()
+            fetchers.extend(client_fetchers)
+
+        # Get RSS feeds from config (legacy/configured sources)
         rss_feeds = cat_config.get("rss_feeds") or []
         for feed in rss_feeds:
             name = feed.get("name", "unnamed")
@@ -103,24 +169,6 @@ class NewsService:
             elif "medium.com" in url and "/tag/" in url:
                 tag = url.split("/tag/")[-1].split("/")[0]
                 fetchers.append(MediumTagFetcher(tag=tag, category=category))
-            else:
-                fetchers.append(RSSFetcher(
-                    name=name, feed_url=url, category=category
-                ))
-
-        # Auto-generate Google News feeds from config files
-        if category == Category.TECH:
-            keyword_fetchers = self._create_keyword_fetchers(Category.TECH)
-            fetchers.extend(keyword_fetchers)
-        elif category == Category.INDUSTRY:
-            keyword_fetchers = self._create_keyword_fetchers(Category.INDUSTRY)
-            fetchers.extend(keyword_fetchers)
-        elif category == Category.COMPETITOR:
-            competitor_fetchers = self._create_competitor_fetchers()
-            fetchers.extend(competitor_fetchers)
-        elif category == Category.CLIENTS:
-            client_fetchers = self._create_client_fetchers()
-            fetchers.extend(client_fetchers)
 
         return fetchers
 
@@ -275,9 +323,25 @@ class NewsService:
         category: Category,
         max_articles: int = 20,
         client_type: ClientType | None = None,
-        send_emails: bool = True
+        send_emails: bool = True,
+        hours: int = 24
     ) -> list[FetchResult]:
-        """Fetch and process all sources for a category."""
+        """Fetch and process all sources for a category.
+
+        Args:
+            category: Category to fetch
+            max_articles: Maximum articles per source
+            client_type: Optional client type filter
+            send_emails: Whether to send email notifications
+            hours: Only fetch articles from last N hours
+
+        Returns:
+            List of fetch results
+        """
+        # Initialize filters
+        time_filter = TimeFilter(hours=hours)
+        region_filter = RegionFilter()
+
         fetchers = self._create_fetchers(category)
         results = []
         processed_articles = []
@@ -286,6 +350,9 @@ class NewsService:
             try:
                 logger.info(f"Fetching from {fetcher.name}...")
                 articles = fetcher.fetch(max_articles=max_articles)
+
+                # Apply time filter
+                articles = time_filter.filter_articles(articles)
 
                 result = FetchResult(
                     source=fetcher.name,
@@ -325,13 +392,16 @@ class NewsService:
                     articles_duplicated=0, errors=[str(e)]
                 ))
 
-        # Apply duplicate grouping and relevance filtering
+        # Apply region filtering, duplicate grouping and relevance filtering
         new_articles = []
         if processed_articles:
-            # First: check relevance
-            relevant_articles = self.relevance_checker.filter_articles(processed_articles)
+            # First: apply region filter
+            region_filtered = region_filter.filter_articles(processed_articles)
 
-            # Second: group duplicates
+            # Second: check relevance
+            relevant_articles = self.relevance_checker.filter_articles(region_filtered)
+
+            # Third: group duplicates
             marked_articles = self.duplicate_grouper.mark_duplicates(relevant_articles)
 
             # Store articles (skip duplicates based on URL/embedding)

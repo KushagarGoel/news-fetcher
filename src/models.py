@@ -80,6 +80,11 @@ class Article(BaseModel):
     tags: list[str] = Field(default_factory=list)
     email_routing: EmailRouting = Field(default_factory=EmailRouting)
 
+    # Regional/relevance filtering
+    region: str = "IN"  # ISO country code (default: India)
+    relevance_score: float = 0.0  # 0.0-1.0 relevance score
+    is_international: bool = False  # True for non-Indian sources
+
     # Duplicate handling
     send_in_mail: bool = True  # Whether to include in email notifications
     duplicate_group_id: Optional[UUID] = None  # ID of the article this is a duplicate of

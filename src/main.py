@@ -33,6 +33,7 @@ def cmd_fetch(args):
     for category in categories:
         print(f"\n{'='*60}")
         print(f"Fetching: {category.value.upper()}")
+        print(f"Time window: Last {args.hours} hours")
         print('='*60)
 
         client_type = ClientType(args.client_type) if args.client_type else None
@@ -41,7 +42,8 @@ def cmd_fetch(args):
             category=category,
             max_articles=args.max_articles,
             client_type=client_type,
-            send_emails=not args.no_email
+            send_emails=not args.no_email,
+            hours=args.hours
         )
 
         for result in results:
@@ -163,6 +165,12 @@ def main():
         "--no-email",
         action="store_true",
         help="Skip sending email notifications"
+    )
+    fetch_parser.add_argument(
+        "--hours",
+        type=int,
+        default=24,
+        help="Only fetch articles from last N hours (default: 24)"
     )
     fetch_parser.set_defaults(func=cmd_fetch)
 
