@@ -53,6 +53,7 @@ class NewsService:
         self.data_dir = self.base_path / data_dir
 
         # Initialize components
+        self._new_articles_buffer: list = []  # Buffer for accumulating new articles across fetches
         self.embedder = OllamaEmbedder()
         self.vector_store = VectorStore(
             persist_directory=str(self.data_dir / "chroma_db"),
@@ -324,7 +325,8 @@ class NewsService:
         max_articles: int = 20,
         client_type: ClientType | None = None,
         send_emails: bool = True,
-        hours: int = 24
+        hours: int = 24,
+        min_tags: int = 2
     ) -> list[FetchResult]:
         """Fetch and process all sources for a category.
 
@@ -334,6 +336,7 @@ class NewsService:
             client_type: Optional client type filter
             send_emails: Whether to send email notifications
             hours: Only fetch articles from last N hours
+            min_tags: Minimum number of tags required for an article to be included
 
         Returns:
             List of fetch results
@@ -401,8 +404,14 @@ class NewsService:
             # Second: check relevance
             relevant_articles = self.relevance_checker.filter_articles(region_filtered)
 
-            # Third: group duplicates
-            marked_articles = self.duplicate_grouper.mark_duplicates(relevant_articles)
+            # Third: filter by minimum tags requirement
+            tagged_articles = [a for a in relevant_articles if len(a.tags) >= min_tags]
+            skipped_for_tags = len(relevant_articles) - len(tagged_articles)
+            if skipped_for_tags > 0:
+                logger.info(f"Skipped {skipped_for_tags} articles with fewer than {min_tags} tags")
+
+            # Fourth: group duplicates
+            marked_articles = self.duplicate_grouper.mark_duplicates(tagged_articles)
 
             # Store articles (skip duplicates based on URL/embedding)
             for article in marked_articles:
@@ -420,6 +429,9 @@ class NewsService:
             articles_to_email = [a for a in new_articles if a.send_in_mail]
             if articles_to_email:
                 self._send_notifications(articles_to_email)
+
+        # Accumulate new articles in buffer for retrieval
+        self._new_articles_buffer.extend(new_articles)
 
         return results
 
@@ -489,3 +501,13 @@ class NewsService:
     def get_stats(self) -> dict[str, int]:
         """Get database statistics."""
         return self.vector_store.get_collection_stats()
+
+    def get_and_clear_new_articles(self) -> list[Article]:
+        """Get all accumulated new articles and clear the buffer.
+
+        Returns:
+            List of new articles accumulated since last clear
+        """
+        articles = self._new_articles_buffer.copy()
+        self._new_articles_buffer.clear()
+        return articles

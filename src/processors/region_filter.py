@@ -116,24 +116,27 @@ class RegionFilter:
         Returns:
             True if article should be included
         """
+        from src.models import Priority
+
         threshold = min_relevance or self.INTERNATIONAL_THRESHOLD
 
         # Always include Indian content
         if article.region == "IN" and not article.is_international:
             return True
 
-        # For international content, require high relevance
+        # For international content, only include if CRITICAL priority
         if article.is_international:
-            if article.relevance_score >= threshold:
+            # Only include international articles if they are CRITICAL priority
+            if article.email_routing.priority == Priority.CRITICAL:
                 logger.info(
-                    f"Including international article (score: {article.relevance_score:.2f}): "
+                    f"Including international article (CRITICAL priority): "
                     f"{article.title[:50]}..."
                 )
                 return True
             else:
                 logger.debug(
-                    f"Filtering out international article (score: {article.relevance_score:.2f}, "
-                    f"threshold: {threshold}): {article.title[:50]}..."
+                    f"Filtering out international article (not CRITICAL): "
+                    f"{article.title[:50]}..."
                 )
                 return False
 
